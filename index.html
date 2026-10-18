@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LibraryPro | Digital Library Manager</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Sidebar Navigation -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-icon">L</div>
+      <div>
+        <h2>LibraryPro</h2>
+        <small>Digital Library Manager</small>
+      </div>
+    </div>
+
+    <p class="nav-label">WORKSPACE</p>
+    <button class="nav active" data-page="Dashboard">▦ Dashboard</button>
+    <button class="nav" data-page="Books">▤ All Books</button>
+    <button class="nav" data-page="Students">👥 Students</button>
+    <button class="nav" data-page="Issue & Return">⇄ Issue & Return</button>
+    <button class="nav" data-page="Recommendations">★ Recommendations</button>
+    <button class="nav" data-page="Reviews">💬 Reviews</button>
+    <button class="nav" data-page="Reports">▥ Reports & Analytics</button>
+    <button class="nav" data-page="Settings">⚙ Settings</button>
+
+    <div class="sidebar-bottom">
+      <div class="user-avatar" id="adminAvatar">A</div>
+      <div>
+        <b id="adminNameDisplay">Administrator</b>
+        <small>Head Librarian</small>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content Area -->
+  <main class="main">
+    <header class="topbar">
+      <div>
+        <h1 id="pageTitle">Dashboard</h1>
+        <p id="pageSubtitle">Welcome back! Here's your library overview.</p>
+      </div>
+      <div class="topbar-actions">
+        <button class="primary" id="addTop">＋ Add New Book</button>
+        <button class="secondary" id="issueTop">⇄ Quick Issue</button>
+        <button id="logoutBtn" type="button" class="logout-btn">Logout</button>
+      </div>
+    </header>
+
+    <!-- Global Summary Stats (Displays Titles & Physical Copies Separately) -->
+    <section class="stats" id="statsSection">
+      <article class="stat-card">
+        <div class="stat-icon purple">▤</div>
+        <p>Total Titles</p>
+        <h2 id="totalBooks">0</h2>
+        <small>Unique book titles catalogued</small>
+      </article>
+
+      <article class="stat-card">
+        <div class="stat-icon blue">📚</div>
+        <p>Total Copies</p>
+        <h2 id="totalPhysicalCopies">0</h2>
+        <small>Total physical book inventory</small>
+      </article>
+
+      <article class="stat-card">
+        <div class="stat-icon green">✓</div>
+        <p>Available Copies</p>
+        <h2 id="availableBooks">0</h2>
+        <small>Ready to be borrowed on shelf</small>
+      </article>
+
+      <article class="stat-card">
+        <div class="stat-icon orange">⇄</div>
+        <p>Issued Copies</p>
+        <h2 id="issuedBooks">0</h2>
+        <small>Currently borrowed by readers</small>
+      </article>
+
+      <article class="stat-card alert-stat">
+        <div class="stat-icon red">⚠️</div>
+        <p>Overdue Books</p>
+        <h2 id="overdueBooks">0</h2>
+        <small id="fineTotalDisplay">Total Fines: ₹0</small>
+      </article>
+
+      <article class="stat-card">
+        <div class="stat-icon teal">👥</div>
+        <p>Students</p>
+        <h2 id="studentCount">0</h2>
+        <small>Registered student readers</small>
+      </article>
+    </section>
+
+    <!-- Overdue Alert Banner (Shows when overdue books exist) -->
+    <div id="overdueBanner" class="alert-banner" hidden>
+      <div class="alert-icon">⚠️</div>
+      <div class="alert-text">
+        <strong>Overdue Alert:</strong> <span id="overdueBannerText">There are books past their return due date.</span>
+      </div>
+      <button type="button" class="banner-btn" id="viewOverdueBtn">View Overdue List →</button>
+    </div>
+
+    <!-- VIEW 1: DASHBOARD VIEW (Overview, Charts & Activity) -->
+    <div id="dashboardView" class="page-view active">
+      <!-- Analytics Charts Section -->
+      <div class="dashboard-grid">
+        <section class="content-card chart-card">
+          <div class="section-head">
+            <div>
+              <h3>📊 Popular Categories</h3>
+              <p>Book distribution across subjects</p>
+            </div>
+          </div>
+          <div class="chart-container">
+            <canvas id="categoryChart" width="400" height="230"></canvas>
+          </div>
+        </section>
+
+        <section class="content-card chart-card">
+          <div class="section-head">
+            <div>
+              <h3>📈 Borrowing & Activity Trends</h3>
+              <p>Most borrowed categories & transaction volume</p>
+            </div>
+          </div>
+          <div class="chart-container">
+            <canvas id="activityChart" width="400" height="230"></canvas>
+          </div>
+        </section>
+      </div>
+
+      <!-- Recent Borrowing Activity Table -->
+      <section class="content-card mt-20">
+        <div class="section-head">
+          <div>
+            <h2>Recent Borrowing Activities</h2>
+            <p>Latest issues, returns, and overdue tracking</p>
+          </div>
+          <button class="action-btn" id="goToIssueReturnBtn">Manage All Loans →</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>TXN ID</th>
+                <th>BOOK TITLE</th>
+                <th>STUDENT</th>
+                <th>ISSUE DATE</th>
+                <th>DUE DATE</th>
+                <th>STATUS</th>
+                <th>FINE</th>
+                <th>ACTION</th>
+              </tr>
+            </thead>
+            <tbody id="recentActivityTable"></tbody>
+          </table>
+        </div>
+        <p id="emptyActivityMessage" class="empty" hidden>No recent activity recorded.</p>
+      </section>
+    </div>
+
+    <!-- VIEW 2: ALL BOOKS (Existing Collection View upgraded with Copies) -->
+    <div id="booksView" class="page-view">
+      <section class="content-card">
+        <div class="section-head">
+          <div>
+            <h2 id="tableTitle">Book Collection & Physical Inventory</h2>
+            <p>Manage, search, edit, and track copy quantities for all library books.</p>
+          </div>
+          <div class="filter-group">
+            <select id="categoryFilter" class="filter-select">
+              <option value="All">All Categories</option>
+            </select>
+            <select id="statusFilter" class="filter-select">
+              <option value="All">All Stock Status</option>
+              <option value="available">Available Copies (>0)</option>
+              <option value="unavailable">Out of Stock (0 Copies)</option>
+            </select>
+            <input id="searchInput" type="search" placeholder="Search title, author, category, ID...">
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>BOOK ID</th>
+                <th>BOOK DETAILS</th>
+                <th>CATEGORY</th>
+                <th>YEAR</th>
+                <th>PHYSICAL COPIES</th>
+                <th>RATING</th>
+                <th>STATUS</th>
+                <th>ACTIONS</th>
+              </tr>
+            </thead>
+            <tbody id="bookTable"></tbody>
+          </table>
+        </div>
+        <p id="emptyMessage" class="empty" hidden>No books found.</p>
+      </section>
+    </div>
+
+    <!-- VIEW 3: STUDENTS MANAGEMENT -->
+    <div id="studentsView" class="page-view">
+      <section class="content-card">
+        <div class="section-head">
+          <div>
+            <h2>Student Profiles & Accounts</h2>
+            <p>Registered student readers, individual credentials, and borrowing limits.</p>
+          </div>
+          <div class="filter-group">
+            <input id="studentSearchInput" type="search" placeholder="Search student by name, ID, username...">
+            <button class="primary" id="addStudentBtn">＋ Add Student</button>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>STUDENT ID</th>
+                <th>NAME & USERNAME</th>
+                <th>DEPARTMENT</th>
+                <th>YEAR</th>
+                <th>ACTIVE LOANS</th>
+                <th>OVERDUE</th>
+                <th>OUTSTANDING FINE</th>
+                <th>ACTIONS</th>
+              </tr>
+            </thead>
+            <tbody id="studentsTable"></tbody>
+          </table>
+        </div>
+        <p id="emptyStudentsMessage" class="empty" hidden>No students found.</p>
+      </section>
+    </div>
+
+    <!-- VIEW 4: ISSUE & RETURN -->
+    <div id="issueReturnView" class="page-view">
+      <div class="two-col-grid">
+        <!-- Issue Book Card -->
+        <section class="content-card">
+          <div class="section-head">
+            <div>
+              <h2>⇄ Issue a Book Copy</h2>
+              <p>Issue an available physical copy to a registered student.</p>
+            </div>
+          </div>
+          <form id="issueForm" class="standard-form">
+            <label for="issueStudentSelect">Select Student</label>
+            <select id="issueStudentSelect" required class="form-input">
+              <option value="">-- Choose Student --</option>
+            </select>
+
+            <label for="issueBookSelect">Select Book with Available Copies</label>
+            <select id="issueBookSelect" required class="form-input">
+              <option value="">-- Choose Book --</option>
+            </select>
+
+            <div class="form-row">
+              <div>
+                <label>Issue Date</label>
+                <input type="text" id="issueDateDisplay" readonly class="form-input read-only">
+              </div>
+              <div>
+                <label>Due Date (14 Days Default)</label>
+                <input type="text" id="dueDateDisplay" readonly class="form-input read-only">
+              </div>
+            </div>
+
+            <button type="submit" class="primary full-width mt-10">Confirm & Issue Copy</button>
+          </form>
+        </section>
+
+        <!-- Quick Return Card -->
+        <section class="content-card">
+          <div class="section-head">
+            <div>
+              <h2>✓ Quick Return & Fine Check</h2>
+              <p>Select borrowed copy to return, restore availability, and calculate fine.</p>
+            </div>
+          </div>
+          <form id="returnForm" class="standard-form">
+            <label for="returnBookSelect">Select Borrowed Book to Return</label>
+            <select id="returnBookSelect" required class="form-input">
+              <option value="">-- Choose Borrowed Book --</option>
+            </select>
+
+            <div id="returnSummaryBox" class="return-summary" hidden>
+              <p><strong>Borrower:</strong> <span id="returnBorrower"></span></p>
+              <p><strong>Issue Date:</strong> <span id="returnIssueDate"></span></p>
+              <p><strong>Due Date:</strong> <span id="returnDueDate"></span></p>
+              <p><strong>Status:</strong> <span id="returnStatusBadge"></span></p>
+              <p><strong>Calculated Fine:</strong> <span id="returnFineAmount" class="fine-highlight">₹0</span></p>
+            </div>
+
+            <button type="submit" class="primary full-width mt-10" id="submitReturnBtn" disabled>Process Return</button>
+          </form>
+        </section>
+      </div>
+
+      <!-- Active Loans Table -->
+      <section class="content-card mt-20">
+        <div class="section-head">
+          <div>
+            <h2>Current Active Loans & Overdue Tracker</h2>
+            <p>Real-time list of all physical copies currently held by students.</p>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>BOOK</th>
+                <th>BORROWER</th>
+                <th>ISSUE DATE</th>
+                <th>DUE DATE</th>
+                <th>DAYS REMAINING / OVERDUE</th>
+                <th>CURRENT FINE</th>
+                <th>ACTION</th>
+              </tr>
+            </thead>
+            <tbody id="activeLoansTable"></tbody>
+          </table>
+        </div>
+        <p id="emptyLoansMessage" class="empty" hidden>No active loans. All copies are in the library!</p>
+      </section>
+    </div>
+
+    <!-- VIEW 5: RECOMMENDATIONS ENGINE OVERVIEW -->
+    <div id="recommendationsView" class="page-view">
+      <section class="content-card">
+        <div class="section-head">
+          <div>
+            <h2>Smart Book Recommendation Engine</h2>
+            <p>Rule-based recommendation system matching students' borrowing habits & favorite categories.</p>
+          </div>
+          <div class="filter-group">
+            <label for="previewStudentSelect" style="font-size: 13px; font-weight: 600;">Preview For Student:</label>
+            <select id="previewStudentSelect" class="filter-select"></select>
+          </div>
+        </div>
+
+        <div id="adminRecommendationProfile" class="student-profile-strip mb-20">
+          <!-- Filled dynamically -->
+        </div>
+
+        <h3>Recommended Books for Student</h3>
+        <div class="book-grid" id="adminRecommendationGrid"></div>
+      </section>
+    </div>
+
+    <!-- VIEW 6: REVIEW MODERATION -->
+    <div id="reviewsView" class="page-view">
+      <section class="content-card">
+        <div class="section-head">
+          <div>
+            <h2>Community Reviews & Ratings</h2>
+            <p>Moderate student ratings and reviews. Approved reviews appear on book details.</p>
+          </div>
+          <select id="reviewFilterSelect" class="filter-select">
+            <option value="All">All Ratings</option>
+            <option value="5">5 Stars</option>
+            <option value="4">4 Stars</option>
+            <option value="3">3 Stars</option>
+            <option value="2">2 Stars</option>
+            <option value="1">1 Star</option>
+          </select>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>BOOK</th>
+                <th>STUDENT</th>
+                <th>RATING</th>
+                <th>REVIEW COMMENT</th>
+                <th>DATE</th>
+                <th>STATUS</th>
+                <th>ACTIONS</th>
+              </tr>
+            </thead>
+            <tbody id="reviewsTable"></tbody>
+          </table>
+        </div>
+        <p id="emptyReviewsMessage" class="empty" hidden>No reviews found.</p>
+      </section>
+    </div>
+
+    <!-- VIEW 7: REPORTS & ANALYTICS -->
+    <div id="reportsView" class="page-view">
+      <section class="content-card">
+        <div class="section-head">
+          <div>
+            <h2>Library Reports & Transaction History</h2>
+            <p>Comprehensive audit log of all borrowing, returns, and fines.</p>
+          </div>
+          <div class="filter-group">
+            <select id="reportStatusFilter" class="filter-select">
+              <option value="All">All Transactions</option>
+              <option value="active">Active Loans</option>
+              <option value="returned">Returned Books</option>
+              <option value="overdue">Overdue Records</option>
+            </select>
+            <button class="primary" id="printReportBtn">🖨 Print / Export Report</button>
+          </div>
+        </div>
+
+        <div class="report-summary-bar">
+          <div class="report-badge">Total Transactions: <b id="rptTotalTxns">0</b></div>
+          <div class="report-badge">Active Loans: <b id="rptActiveTxns">0</b></div>
+          <div class="report-badge">Returned On Time: <b id="rptOnTimeTxns">0</b></div>
+          <div class="report-badge">Overdue Recorded: <b id="rptOverdueTxns">0</b></div>
+          <div class="report-badge highlight">Total Fines Assessed: <b id="rptTotalFines">₹0</b></div>
+        </div>
+
+        <div class="table-wrap mt-15">
+          <table>
+            <thead>
+              <tr>
+                <th>TXN ID</th>
+                <th>BOOK TITLE</th>
+                <th>STUDENT</th>
+                <th>ISSUE DATE</th>
+                <th>DUE DATE</th>
+                <th>RETURN DATE</th>
+                <th>STATUS</th>
+                <th>FINE</th>
+              </tr>
+            </thead>
+            <tbody id="reportsTable"></tbody>
+          </table>
+        </div>
+        <p id="emptyReportsMessage" class="empty" hidden>No transaction records matching filter.</p>
+      </section>
+    </div>
+
+    <!-- VIEW 8: SETTINGS -->
+    <div id="settingsView" class="page-view">
+      <section class="content-card max-w-700">
+        <div class="section-head">
+          <div>
+            <h2>System & Library Settings</h2>
+            <p>Configure borrowing rules, overdue fine rates, and system policies.</p>
+          </div>
+        </div>
+
+        <form id="settingsForm" class="standard-form">
+          <label for="cfgBorrowDays">Default Borrowing Period (Days)</label>
+          <input id="cfgBorrowDays" type="number" min="1" max="90" required class="form-input">
+          <small class="field-hint">Default is 14 days before a loan is flagged as overdue.</small>
+
+          <label for="cfgFineRate">Overdue Fine Rate per Day (₹)</label>
+          <input id="cfgFineRate" type="number" min="0" max="500" required class="form-input">
+          <small class="field-hint">Default is ₹2 per day past the due date.</small>
+
+          <label for="cfgMaxLoans">Maximum Active Loans per Student</label>
+          <input id="cfgMaxLoans" type="number" min="1" max="10" required class="form-input">
+          <small class="field-hint">Default is 3 books maximum simultaneously per student.</small>
+
+          <label for="cfgLibraryName">Library Name</label>
+          <input id="cfgLibraryName" type="text" required class="form-input">
+
+          <div class="dialog-actions mt-20">
+            <button type="submit" class="primary">Save Configuration</button>
+          </div>
+        </form>
+
+        <div class="danger-zone mt-30">
+          <h3>Reset Demo Data</h3>
+          <p>Restore starter books, physical copy quantities, sample transactions, and registered students.</p>
+          <button type="button" class="btn-danger" id="resetDemoBtn">Reset to Default Seed Data</button>
+        </div>
+      </section>
+    </div>
+
+    <footer>© 2026 LibraryPro · Digital Library Manager · Version 2.1 Modern Edition</footer>
+  </main>
+
+  <!-- MODAL: ADD / EDIT BOOK (Includes Total Copies field) -->
+  <dialog id="bookDialog">
+    <form id="bookForm">
+      <div class="dialog-head">
+        <h2 id="bookDialogTitle">Add New Book</h2>
+        <button type="button" id="closeDialog" class="close">✕</button>
+      </div>
+
+      <input type="hidden" id="editBookMode" value="create">
+
+      <label for="bookId">Book ID</label>
+      <input id="bookId" type="number" min="1" required class="form-input">
+
+      <label for="bookTitle">Book Title</label>
+      <input id="bookTitle" type="text" required maxlength="120" class="form-input">
+
+      <label for="bookAuthor">Author</label>
+      <input id="bookAuthor" type="text" required maxlength="100" class="form-input">
+
+      <label for="bookCategory">Category</label>
+      <input id="bookCategory" type="text" required maxlength="60" class="form-input" list="categorySuggestions">
+      <datalist id="categorySuggestions">
+        <option value="Programming">
+        <option value="Computer Science">
+        <option value="Electronics">
+        <option value="Artificial Intelligence">
+        <option value="Mathematics">
+        <option value="Business & Management">
+        <option value="Fiction">
+      </datalist>
+
+      <div class="form-row">
+        <div>
+          <label for="bookYear">Publication Year</label>
+          <input id="bookYear" type="number" min="1900" max="2099" class="form-input" value="2022">
+        </div>
+        <div>
+          <label for="bookTotalCopies">Total Physical Copies</label>
+          <input id="bookTotalCopies" type="number" min="1" max="10000" required class="form-input" value="50">
+        </div>
+      </div>
+      <small class="field-hint" id="copiesEditHint">Total physical inventory owned by the library.</small>
+
+      <label for="bookDesc">Description / Summary</label>
+      <textarea id="bookDesc" rows="3" class="form-input" placeholder="Brief synopsis or overview of this book..."></textarea>
+
+      <div class="dialog-actions">
+        <button type="button" id="cancelDialog" class="secondary">Cancel</button>
+        <button type="submit" class="primary" id="saveBookBtn">Save Book</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- MODAL: ADD / EDIT STUDENT -->
+  <dialog id="studentDialog">
+    <form id="studentForm">
+      <div class="dialog-head">
+        <h2>Add Registered Student</h2>
+        <button type="button" id="closeStudentDialog" class="close">✕</button>
+      </div>
+
+      <label for="stuId">Student ID (e.g. STU-104)</label>
+      <input id="stuId" type="text" required class="form-input" placeholder="STU-104">
+
+      <label for="stuName">Full Name</label>
+      <input id="stuName" type="text" required class="form-input" placeholder="e.g. Amit Kumar">
+
+      <label for="stuUsername">Login Username</label>
+      <input id="stuUsername" type="text" required class="form-input" placeholder="e.g. amit">
+
+      <label for="stuPassword">Password</label>
+      <input id="stuPassword" type="password" required class="form-input" placeholder="Enter student password">
+
+      <label for="stuDept">Department</label>
+      <input id="stuDept" type="text" required class="form-input" placeholder="e.g. Information Technology">
+
+      <label for="stuYear">Academic Year</label>
+      <input id="stuYear" type="text" required class="form-input" placeholder="e.g. 3rd Year">
+
+      <label for="stuEmail">Email Address</label>
+      <input id="stuEmail" type="email" required class="form-input" placeholder="amit@college.edu">
+
+      <div class="dialog-actions">
+        <button type="button" id="cancelStudentDialog" class="secondary">Cancel</button>
+        <button type="submit" class="primary">Save Student</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- MODAL: BOOK DETAILS & REVIEWS -->
+  <dialog id="bookDetailsModal" class="large-modal">
+    <div class="dialog-head">
+      <h2 id="modalBookTitle">Book Details</h2>
+      <button type="button" id="closeDetailsModal" class="close">✕</button>
+    </div>
+    <div id="modalBookContent" class="modal-body"></div>
+  </dialog>
+
+  <!-- Toast notification (Preserves original ID) -->
+  <div id="toast" role="status" aria-live="polite"></div>
+
+  <!-- Scripts -->
+  <script src="shared.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
